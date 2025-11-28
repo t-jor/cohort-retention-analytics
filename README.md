@@ -156,6 +156,7 @@ Overall → **declining acquisition and weakening early repeat behavior indicate
 
 ## 6. Repository Structure
 
+```text
 ETL-Project-Cohort-Analysis/
 │
 ├── notebooks/
@@ -173,6 +174,7 @@ ETL-Project-Cohort-Analysis/
 │   └── cohort_dashboard.png
 │
 └── README.md
+```
 
 ---
 
