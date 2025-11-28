@@ -2,7 +2,7 @@
 
 ## 📌 Executive Summary
 
-Cohort analysis is a key method in e-commerce analytics to understand how customer behavior evolves over time.  
+Cohort analysis is one of the most effective ways to understand how customer behavior evolves over time — particularly in e-commerce, where acquisition and retention directly drive revenue.  
 It helps answer essential business questions:
 
 - **How effectively are we acquiring new customers?**  
@@ -11,7 +11,7 @@ It helps answer essential business questions:
 - **Is retention improving or declining over time?**
 
 This project simulates a real-world analytics pipeline for a fictitious online shop (2024).  
-Although the Databricks catalog uses the common term *ETL*, the workflow itself follows a modern **ELT pattern** (data is loaded first via Fivetran and transformed entirely inside Databricks).  
+While Databricks refers to the Unity Catalog as *ETL*, the actual workflow is modern **ELT** (data is loaded first, then transformed entirely in Databricks).  
 Using cloud-native ELT tools (**BigQuery → Fivetran → Databricks**), the pipeline produces insights into:
 
 - Monthly cohort sizes  
@@ -23,19 +23,19 @@ The entire workflow follows the **Medallion Architecture** (Bronze → Silver �
 
 ---
 
-## 🚀 Architecture Overview
+## 🚀 Architecture Overview (ELT Workflow)
 
 ```text
 BigQuery (Source)
         │
         ▼
-Fivetran (Managed Ingestion)
+Fivetran (Managed Connector) — Extract & Load
         │
         ▼
-Databricks Lakehouse
- ├── Bronze  – Raw Fivetran tables
- ├── Silver  – Cleaned facts (orders & customers)
- ├── Gold    – Cohort analytics tables
+Databricks Lakehouse — Transform
+ ├── Bronze  – Raw ingested tables
+ ├── Silver  – Clean business facts
+ ├── Gold    – Analytics-ready tables
  └── Serve   – Lakeview Dashboard
 ```
 
@@ -43,8 +43,7 @@ Databricks Lakehouse
 
 ## 1. Data Source – BigQuery
 
-The raw dataset `ecom_orders` contains ~1,000 transactions from a fictitious e-commerce store for the year 2024.  
-It serves as the single source of truth for this ELT pipeline.
+The raw dataset `ecom_orders` contains ~1,000 transactions from a fictitious e-commerce store for the year 2024.
 
 ### ✔ BigQuery Dataset
 
@@ -54,15 +53,13 @@ It serves as the single source of truth for this ELT pipeline.
 
 ## 2. Ingestion Layer – Fivetran
 
-A **Fivetran BigQuery → Databricks** connector performs automated ingestion every 6 hours.  
-Schema changes and updates are handled seamlessly.
+A **Fivetran BigQuery → Databricks** connector loads the `ecom_orders` table into the Lakehouse on an automated schedule.
 
 ### Key properties
 
-- Zero-maintenance ingestion  
-- Automated sync on schedule  
-- Schema evolution supported  
-- Loaded into the Databricks catalog as Delta tables  
+- Fully managed ingestion (API changes, schema drift, retries, rate limits, incremental loading)  
+- Automated scheduled sync  
+- Data loaded into Databricks Unity Catalog as Delta tables
 
 ### ✔ Fivetran Connector
 
@@ -72,56 +69,45 @@ Schema changes and updates are handled seamlessly.
 
 ## 3. Databricks Lakehouse – Medallion Architecture
 
-All transformations are implemented using Databricks SQL & PySpark notebooks.
+Transformations follow the **Medallion Architecture** described in the Architecture Overview above.
+The section below lists the concrete tables implemented in each layer.
 
 ---
 
-### 🥉 Bronze Layer – Raw Data
+### 🥉 Bronze Layer – Raw & Cleaned Source
 
-Contains the unmodified, synchronized table:
-
-- `bronze_ecom_orders`
+| Table                | Description |
+|----------------------|-------------|
+| `ecom_orders`        | Raw Fivetran-loaded table including ingestion metadata. |
+| `bronze_ecom_orders` | Cleaned subset containing only business-relevant fields (order, customer, date, sales). |
 
 ---
 
-### 🥈 Silver Layer – Clean Business Facts
+### 🥈 Silver Layer – Business Facts
 
-Two refined fact tables:
-
-#### `silver_customer_facts`
-
-- First purchase date  
-- Cohort month  
-- Second purchase date  
-- Time-to-second-order (1/2/3 months)
-
-#### `silver_order_facts`
-
-- All orders enriched with:
-  - new/existing customer status  
-  - standardized dates  
-  - order_month  
+| Table                   | Description |
+|-------------------------|-------------|
+| `silver_customer_facts` | Customer-level facts: first purchase, cohort month, second purchase, time-to-second-order. |
+| `silver_order_facts`    | Order-level facts enriched with lifecycle tagging (new/existing) and monthly features. |
 
 ---
 
 ### 🥇 Gold Layer – Analytics Marts
-
-Final analytical tables feeding the dashboard:
 
 | Table                     | Description |
 |--------------------------|-------------|
 | `gold_cohort_sizes`      | Customers per cohort month |
 | `gold_cohort_retention`  | 1-, 2-, and 3-month retention |
 | `gold_repeat_purchases`  | Share reaching 2+, 3+, 4+ orders |
-| `gold_order_distribution`| Monthly orders by new/existing customers |
+| `gold_order_distribution`| Monthly orders by new vs. existing customers |
 
 ---
 
-## 📁 Databricks Catalog Structure
+## 📁 Databricks Unity Catalog Structure
 
-All tables are stored inside the Databricks lakehouse catalog.
+All tables are stored inside Unity Catalog.
 
-### ✔ Databricks Catalog
+### ✔ Unity Catalog
 
 ![Databricks Catalog](img/databricks_catalog.png)
 
@@ -134,8 +120,8 @@ The full pipeline runs as a Databricks job with:
 - Bronze → Silver → Gold → Dashboard dependency chain  
 - Triggered by **Table Update** of `ecom_orders`  
 - Serverless compute  
-- Automated dashboard refresh  
-- Email notifications  
+- Automated dashboard refresh
+- Email notifications (on start, success, and failure – including a snapshot of the refreshed cohort dashboard after a successful run)
 
 ### ✔ Successful DAG Run
 
@@ -156,10 +142,11 @@ The final dashboard highlights key e-commerce KPIs:
 
 ### 🔍 Insights (2024)
 
-- **Acquisition declines** sharply from mid-year  
-- **1-month retention drops** after May  
-- **Repeat purchase depth weakens**, suggesting fewer loyal heavy users  
-- Overall → **activation and retention effectiveness is decreasing**
+- **Customer acquisition declines sharply from February** and stops entirely after June.  
+- **Early retention (1-month) peaks in Apr/May**, but declines overall, whereas **longer-term retention (2–3 months) remains stable**, indicating consistent return behavior across cohorts.
+- **Repeat purchase depth weakens** — while most customers place a second order, fewer continue to a third or fourth purchase.
+
+Overall → **declining acquisition and weakening early repeat behavior indicate decreasing activation effectiveness across 2024**
 
 ### ✔ Dashboard Screenshot
 
@@ -169,7 +156,6 @@ The final dashboard highlights key e-commerce KPIs:
 
 ## 6. Repository Structure
 
-```text
 ETL-Project-Cohort-Analysis/
 │
 ├── notebooks/
@@ -186,35 +172,48 @@ ETL-Project-Cohort-Analysis/
 │   ├── databricks_dag.png
 │   └── cohort_dashboard.png
 │
-├── docs/        # Optional additional screenshots
-├── LICENSE
 └── README.md
-```
 
 ---
 
 ## 7. Technologies Used
 
-- **Google BigQuery** – source system  
-- **Fivetran** – managed ingestion  
-- **Databricks Lakehouse** – Delta, SQL, PySpark, Jobs, Lakeview  
-- **GitHub** – version control  
+- **Google BigQuery** – cloud data warehouse used as the source system  
+- **Fivetran** – fully managed connector for automated, incremental data ingestion  
+- **Databricks Lakehouse** – Delta Lake storage, SQL & PySpark transformations, Jobs orchestration, Lakeview dashboards  
+- **GitHub** – version control and documentation
 
 ---
 
 ## 8. How to Reproduce
 
-1. Create BigQuery dataset & load `ecom_orders`  
-2. Configure Fivetran BigQuery → Databricks connector  
-3. Create Databricks catalog & schema  
-4. Run Bronze, Silver, Gold notebooks  
-5. Build Lakeview Dashboard  
-6. Configure Databricks Job Pipeline  
-7. Validate using the inspection notebook  
+1. **Set up BigQuery**  
+   Create a dataset and load the sample `ecom_orders` table.
+
+2. **Configure Fivetran**  
+   Connect BigQuery → Databricks using the managed connector.
+
+3. **Prepare Databricks**  
+   Create a catalog & schema to store Bronze, Silver, and Gold tables.
+
+4. **Connect Databricks to GitHub**  
+   Create a project repo, link it as a Databricks Repo, and sync notebooks via Git.
+
+5. **Run the transformation notebooks**  
+   Execute Bronze → Silver → Gold notebooks to build the Medallion tables.
+
+6. **Validate the tables**  
+   Use the inspection notebook to preview Bronze/Silver/Gold outputs before orchestration.
+
+7. **Create the Databricks Job**  
+   Orchestrate Bronze → Silver → Gold using a table-update trigger.
+
+8. **Build the Lakeview dashboard**  
+   Visualize cohort sizes, retention, and repeat purchases.
 
 ---
 
-## 9. Next Steps (Realistic Extension Options)
+## 9. Next Steps (Extension Options)
 
 Given the limited sample dataset, meaningful improvements include:
 
