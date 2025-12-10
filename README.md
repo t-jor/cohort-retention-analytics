@@ -1,4 +1,7 @@
-# Cohort Analysis Pipeline – BigQuery → Fivetran → Databricks
+# Cohort Retention Modeling & Customer Behavior Analysis (Ecom Case Study)
+
+**Analyzing customer retention, repeat purchasing, and cohort performance for an e-commerce business**  
+*A cloud-native ELT pipeline using BigQuery, Fivetran, and Databricks to model acquisition, retention, and lifecycle purchasing behavior.*
 
 ## 📌 Executive Summary
 
@@ -227,6 +230,7 @@ Given the limited sample dataset, meaningful improvements include:
 
 ---
 
-## 👤 Author
+## 🧑‍💻 Author
 
-Thomas Jortzig — ELT Pipeline & Visualization for Cohort Analysis (11/2025)
+**Thomas Jortzig**  
+Cohort Retention Modeling & Customer Behavior Analysis – Ecom Case Study (11/2025)
