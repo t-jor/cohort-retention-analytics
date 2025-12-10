@@ -3,6 +3,8 @@
 **Analyzing customer retention, repeat purchasing, and cohort performance for an e-commerce business**  
 *A cloud-native ELT pipeline using BigQuery, Fivetran, and Databricks to model acquisition, retention, and lifecycle purchasing behavior.*
 
+---
+
 ## 📌 Executive Summary
 
 Cohort analysis is one of the most effective ways to understand how customer behavior evolves over time — particularly in e-commerce, where acquisition and retention directly drive revenue.  
